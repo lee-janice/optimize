@@ -6,62 +6,14 @@ Compares classic Linearized Bregman to modified Linearized Bregman
 import numpy as np
 import numpy.random as random
 import numpy.linalg as la
-import matplotlib.pyplot as plt
 import string
 np.random.seed(0)
 
-def rand_exp_decay(n, a, b):
-    """
-    Creates a random semi-sparse array with exponentially decreasing elements
-    params:
-        n (int): desired number of elements in the array
-        a (float): ???
-        b (float): ???
-    returns:
-        R (numpy array): array with exponentially decreasing elements
-    """
-    A = np.log(a)
-    B = np.log(b)
-    R1 = A + (B-A) * random.rand(n)
-    R = np.exp(R1*2)
-    idx = random.permutation(n)
-    for i in idx[0:int(np.floor(n/2))]:
-        R[i] = -R[i]
-    return R
+import os, sys 
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+import plot
+import generate_vectors as gen
 
-def rand_sparse(n, frac):
-    """
-    Creates a random sparse array
-    params:
-        n (int): desired number of elements in the array
-        frac (int): 1/frac gives the fraction of non-zero elements in the array
-    returns:
-        R (numpy array): sparse array
-    """
-    R = np.zeros(n, dtype=float)
-    idx = random.permutation(n)
-    for i in idx[0:int(n/frac)]:
-        R[i] = random.rand(1)
-    return R
-    
-def add_awgn_noise(x, snr_dB):
-    """
-    Function to add AWGN to a given signal 
-    Original function authored by Mathuranathan Viswanathan for MatLab/Octave
-    """
-    l = x.size
-    snr = 10 ** (snr_dB/10)
-    e_sym = np.sum(np.square(x)) / l
-    n0 = e_sym / snr
-    if (np.isreal(x).all()):
-        noise_sigma = np.sqrt(n0)
-        n = noise_sigma * random.randn(1, l) 
-    else:
-        noise_sigma = np.sqrt(n0/2)
-        n = noise_sigma * (random.randn(1, l) + 1j*random.randn(1, l))
-    y = x + n
-    return y
-        
 def get_residual(A, x, y):
     residual = np.dot(A, x) - y
     return residual
@@ -83,9 +35,9 @@ def lb_compare(m, n, num_samp, max_iter, sparse=True, noise=False):
     # ------ SETTING PARAMETERS ------
     # true value of x (x*, solution)
     if (sparse):
-        x_true = rand_sparse(n, 20)
+        x_true = gen.rand_sparse(n, 50)
     else:
-        x_true = rand_exp_decay(n, 0.0001, np.sqrt(5))
+        x_true = gen.rand_exp_decay(n, 0.0001, np.sqrt(5))
 
     # true values of A and y
     A = random.randn(m, n)
@@ -94,7 +46,7 @@ def lb_compare(m, n, num_samp, max_iter, sparse=True, noise=False):
     if (noise):
         y = y_true + random.normal(0, 1, y_true.shape)
         #TODO: FIX THIS LOL 
-        # y = add_awgn_noise(y_true, -20)
+        # y = gen.add_awgn_noise(y_true, -20)
     else:
         y = y_true
 
@@ -202,44 +154,6 @@ def lb_compare(m, n, num_samp, max_iter, sparse=True, noise=False):
         moder[i-1, 2] = la.norm(x_true - x_lb[:, 2], 2) / la.norm(x_true, 2)
         
     return residual, onenorm, moder
-    
-def get_title(sparse, noise, type):
-    title = "Classic vs. Modified LB ("
-    # get sparse title 
-    if (sparse): 
-        title += "sparse soln, "
-    else:
-        title += "exponentally decaying soln, "
-    # get noise title 
-    if (noise):
-        title += "w/noise) - "
-    else: 
-        title += "w/out noise) - "
-    title += type.upper()
-    return title 
-
-def get_filename(sparse, noise, type):
-    filename = "../plots/" + type
-    # get sparse filename 
-    if (sparse): 
-        filename += "_sparse_"
-    else:
-        filename += "_randExpDecay_"
-    # get noise filename 
-    if (noise):
-        filename += "noise.png"
-    else: 
-        filename += "noNoise.png"
-    return filename
-
-def plot(max_iter, data, title, filename):
-    plt.clf()
-    plt.plot(range(1, max_iter+1), data)
-    plt.legend(["Classic", "Modified", "Modified w/out threshold"])
-    plt.xlabel("Number of iterations")
-    plt.ylabel("Data values")
-    plt.title(title)
-    plt.savefig(filename)
 
 def main():
     # ------ CONFIGURE PARAMETERS ------
@@ -261,17 +175,11 @@ def main():
     # print(results[2])
     
     if (plot_residual):
-        title = get_title(sparse, noise, "residual")
-        filename = get_filename(sparse, noise, "residual")
-        plot(max_iter, results[0], title, filename)
+        plot.plot_lb(max_iter, results[0], sparse, noise, "residual")
     if (plot_onenorm):
-        title = get_title(sparse, noise, "1-norm")
-        filename = get_filename(sparse, noise, "1-norm")
-        plot(max_iter, results[1], title, filename)
+        plot.plot_lb(max_iter, results[1], sparse, noise, "1-norm")
     if (plot_moder):
-        title = get_title(sparse, noise, "model-error")
-        filename = get_filename(sparse, noise, "model-error")
-        plot(max_iter, results[2], title, filename)
+        plot.plot_lb(max_iter, results[2], sparse, noise, "model")
         
 if __name__ == "__main__":
     main()    
