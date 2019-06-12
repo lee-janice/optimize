@@ -171,11 +171,11 @@ def ista(m, n, num_samp, max_iter, sparse=True, noise=False):
 
 def main():
     # ------ CONFIGURE PARAMETERS ------
-    m = 2000         # rows of A 
-    n = 100          # columns of A (rows of x_true and y_true)
-    num_samp = 20    # rows of A and y to sample, num_samp < n
+    m = 200000         # rows of A 
+    n = 10000          # columns of A (rows of x_true and y_true)
+    num_samp = 2000    # rows of A and y to sample, num_samp < n
     max_iter = 250
-    sparse = False
+    sparse = True
     noise = True
     
     plot_residual = True
