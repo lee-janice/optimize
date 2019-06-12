@@ -40,7 +40,7 @@ def rand_sparse(n, frac):
     """
     R = np.zeros(n, dtype=float)
     idx = random.permutation(n)
-    for i in idx[0:(n/frac)]:
+    for i in idx[0:int(n/frac)]:
         R[i] = random.rand(1)
     return R
     
@@ -83,7 +83,7 @@ def lb_compare(m, n, num_samp, max_iter, sparse=True, noise=False):
     # ------ SETTING PARAMETERS ------
     # true value of x (x*, solution)
     if (sparse):
-        x_true = rand_sparse(n, 5)
+        x_true = rand_sparse(n, 20)
     else:
         x_true = rand_exp_decay(n, 0.0001, np.sqrt(5))
 
@@ -219,12 +219,12 @@ def get_title(sparse, noise, type):
     return title 
 
 def get_filename(sparse, noise, type):
-    filename = "plots/" + type
+    filename = "../plots/" + type
     # get sparse filename 
     if (sparse): 
         filename += "_sparse_"
     else:
-        filename += "randExpDecay_"
+        filename += "_randExpDecay_"
     # get noise filename 
     if (noise):
         filename += "noise.png"
@@ -236,6 +236,8 @@ def plot(max_iter, data, title, filename):
     plt.clf()
     plt.plot(range(1, max_iter+1), data)
     plt.legend(["Classic", "Modified", "Modified w/out threshold"])
+    plt.xlabel("Number of iterations")
+    plt.ylabel("Data values")
     plt.title(title)
     plt.savefig(filename)
 
@@ -246,7 +248,7 @@ def main():
     num_samp = 200    # rows of A and y to sample, num_samp < n
     max_iter = 250
     sparse = True 
-    noise = True
+    noise = False
     
     plot_residual = True
     plot_onenorm = True
