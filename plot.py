@@ -16,7 +16,7 @@ def get_title(sparse, noise, type):
     returns:
         the generated figure/plot title 
     """
-    title = "ISTA ("
+    title = "("
     # get sparse title 
     if (sparse): 
         title += "sparse soln, "
@@ -73,7 +73,7 @@ def plot_lb(max_iter, data, sparse, noise, type):
     plt.legend(["Classic", "Modified", "Modified w/out threshold"])
     plt.xlabel("Number of iterations")
     plt.ylabel("Data values")
-    plt.title(get_title(sparse, noise, type))
+    plt.title("LB " + get_title(sparse, noise, type))
     plt.savefig(get_filename(sparse, noise, type))
     
 def plot_ista(max_iter, data, sparse, noise, type):
@@ -92,5 +92,5 @@ def plot_ista(max_iter, data, sparse, noise, type):
     plt.plot(range(1, max_iter+1), data)
     plt.xlabel("Number of iterations")
     plt.ylabel("Data values")
-    plt.title(get_title(sparse, noise, type))
+    plt.title("ISTA " + get_title(sparse, noise, type))
     plt.savefig(get_filename(sparse, noise, type))
