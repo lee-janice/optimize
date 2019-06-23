@@ -34,7 +34,8 @@ def ista(m, n, num_samp, max_iter, lmbda, sparse=True, noise=False):
         sparse (bool): true if the soln is sparse 
         noise (bool): true if the data contains noise 
     returns:
-        results (array-like): an array containing the results of the optimization
+        results (array-like): a tuple containing the arrays 
+                with the results of the optimization
     """
     # ------ SETTING PARAMETERS ------
     # initializes the Ax = y problem 
@@ -108,12 +109,14 @@ def main():
     # print(results[1])
     # print(results[2])
     
+    algorithm = "ista"
+    
     if (plot_residual):
-        plot.plot_residual(max_iter, results[0], sparse, noise, "ISTA")
+        plot.plot_residual(max_iter, results[0], sparse, noise, algorithm)
     if (plot_onenorm):
-        plot.plot_onenorm(max_iter, results[1], sparse, noise, "ISTA")
+        plot.plot_onenorm(max_iter, results[1], sparse, noise, algorithm)
     if (plot_moder):
-        plot.plot_moder(max_iter, results[2], sparse, noise, "ISTA")
+        plot.plot_moder(max_iter, results[2], sparse, noise, algorithm)
         
 if __name__ == "__main__":
     main()    

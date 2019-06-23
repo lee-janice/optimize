@@ -1,7 +1,7 @@
 """
-Executes ADAGRAD (Adaptive Gradient Descent)
+Executes ADAGRAD (Adaptive Gradient Descent) with Linearized Bregman-like thresholding 
 @authors: Jimmy Singh and Janice Lee
-@date: June 21st, 2019
+@date: June 23rd, 2019
 """
 import numpy as np
 import numpy.random as random
@@ -11,7 +11,18 @@ np.random.seed(0)
 import init_problem as init 
 import plot
 
-def adagrad(m, n, num_samp, max_iter, sparse=True, noise=False, eta=2, epsilon=1e-6):
+def threshold(x, lmbda): 
+    """
+    Replaces values in x that are less than lambda with 0
+    params: 
+        x (array-like): the array to threshold
+        lmbda (float): the value to threshold by 
+    returns: 
+        a thresholded array 
+    """
+    return np.multiply(np.maximum(np.absolute(x) - lmbda, 0), np.sign(x))
+
+def adagrad_lb_classic(m, n, num_samp, max_iter, lmbda, sparse=True, noise=False, eta=.5, epsilon=1e-6):
     """
     Executes ADAGRAD  
     params:
@@ -19,6 +30,7 @@ def adagrad(m, n, num_samp, max_iter, sparse=True, noise=False, eta=2, epsilon=1
         n (int): columns of A / rows of x and b
         num_samp (int): rows of A and b to sample, num_samp < n 
         max_iter (int): number of iterations to run 
+        lmbda (float): the thresholding parameter 
         sparse (bool): true if the soln is sparse 
         noise (bool): true if the data contains noise 
         eta (float): the desired learning rate 
@@ -37,6 +49,8 @@ def adagrad(m, n, num_samp, max_iter, sparse=True, noise=False, eta=2, epsilon=1
     s_k = np.zeros((n, 1))
     # the step size ( eta/sqrt(s_k + epsilon) )
     t_k = np.zeros((n, 1))
+    # thresholder array 
+    z_k = np.zeros((n, 1))
     # the estimation of x_true 
     x_k = np.zeros((n, 1))
     
@@ -65,14 +79,15 @@ def adagrad(m, n, num_samp, max_iter, sparse=True, noise=False, eta=2, epsilon=1
         s_k = s_k + np.multiply(gradient, gradient)
         t_k = eta / np.sqrt(s_k + epsilon) 
         
-        # ------ UPDATING X ------
-        x_k = x_k - np.multiply(t_k, gradient)
+        # ------ UPDATING X AND Z------
+        z_k = z_k - np.multiply(t_k, gradient)
+        x_k = threshold(z_k, lmbda)
         
         # ------ RESULTS ------
         residuals[i-1] = la.norm(residual, 2) / la.norm(b_sub, 2)
         onenorm[i-1] = la.norm(x_k, 1)
         moder[i-1] = la.norm(x_true - x_k, 2) / la.norm(x_true, 2)
-    
+        
     return residuals, onenorm, moder 
     
 def main(): 
@@ -80,23 +95,24 @@ def main():
     m = 20000         # rows of A 
     n = 1000          # columns of A (rows of x_true and y_true)
     num_samp = 200    # rows of A and y to sample, num_samp < n
-    max_iter = 250
+    max_iter = 300
     sparse = True
     noise = False
-    eta = 1
+    lmbda = 3.0
+    eta = .5
     epsilon = 1e-6
     
     plot_residual = True
     plot_onenorm = True
     plot_moder = True 
     # ------ EXECUTE ------
-    results = adagrad(m, n, num_samp, max_iter, sparse, noise, eta, epsilon)
+    results = adagrad_lb_classic(m, n, num_samp, max_iter, lmbda, sparse, noise, eta, epsilon)
     
-    print(results[0][249])
+    print(results[0][299])
     # print(results[1])
     # print(results[2])
     
-    algorithm = "adagrad"
+    algorithm = "adagrad-lb-classic"
     
     if (plot_residual):
         plot.plot_residual(max_iter, results[0], sparse, noise, algorithm)

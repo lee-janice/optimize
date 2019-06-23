@@ -6,7 +6,6 @@ Compares classic Linearized Bregman to modified Linearized Bregman
 import numpy as np
 import numpy.random as random
 import numpy.linalg as la
-import string
 np.random.seed(0)
 
 import init_problem as init
@@ -172,11 +171,11 @@ def main():
     # print(results[2])
     
     if (plot_residual):
-        plot.plot_residual(max_iter, results[0], sparse, noise, "residual")
+        plot.plot_residual(max_iter, results[0], sparse, noise, "lb")
     if (plot_onenorm):
-        plot.plot_onenorm(max_iter, results[1], sparse, noise, "1-norm")
+        plot.plot_onenorm(max_iter, results[1], sparse, noise, "lb")
     if (plot_moder):
-        plot.plot_moder(max_iter, results[2], sparse, noise, "model-error")
+        plot.plot_moder(max_iter, results[2], sparse, noise, "lb")
     # if (plot_nonzero):
     #     plot.plot_lb(max_iter, results[5], sparse, noise, "nonzeros")
         
