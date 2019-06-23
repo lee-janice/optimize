@@ -25,7 +25,7 @@ def rand_exp_decay(n, a, b):
     idx = random.permutation(n)
     for i in idx[0:int(np.floor(n/2))]:
         R[i] = -R[i]
-    return R
+    return R.reshape(n, 1)
     
 def rand_sparse(n, frac):
     """
@@ -36,6 +36,7 @@ def rand_sparse(n, frac):
     returns:
         R (numpy array): sparse array
     """
+    # R = np.zeros((n,1), dtype=float)
     R = np.zeros(n, dtype=float)
     idx = random.permutation(n)
     for i in idx[0:(n/frac)]:

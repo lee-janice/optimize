@@ -1,7 +1,7 @@
 """
-Compares classic Linearized Bregman to modified Linearized Bregman
+Executes ISTA (Iterative Shrinkage Thresholding Algorithm)
 @authors: Jimmy Singh and Janice Lee
-@date: June 6th, 2019
+@date: June 11th, 2019
 """
 import numpy as np
 import numpy.random as random
@@ -9,50 +9,46 @@ import numpy.linalg as la
 import string
 np.random.seed(0)
 
-import os, sys 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+import init_problem as init
 import plot
-import generate_vectors as gen
 
 def get_residual(A, x, y):
-    residual = np.dot(A, x) - y
+    """
+    Calculates the residual (Ax-y)
+    """
+    Ax = np.dot(A, x) 
+    residual = Ax - y.reshape(Ax.shape)
     return residual
 
 def get_gradient(A, residual):
+    """
+    Calculates the gradient (A.T * (Ax-y))
+    """
     gradient = np.dot(A.T, residual)
     return gradient
 
-def lb_compare(m, n, num_samp, max_iter, sparse=True, noise=False):
+def ista(m, n, num_samp, max_iter, sparse=True, noise=False):
     """
-    Compares classic LB to modified LB
+    Executes ISTA 
     params:
         m (int):
         n (int):
         num_samp (int):
         max_iter (int):
     returns:
+        results (array-like): an array containing 
     """
     # ------ SETTING PARAMETERS ------
-    # true value of x (x*, solution)
-    if (sparse):
-        x_true = gen.rand_sparse(n, 50)
-    else:
-        x_true = gen.rand_exp_decay(n, 0.0001, np.sqrt(5))
-
-    # true values of A and y
-    A = random.randn(m, n)
-    y_true = np.dot(A, x_true)
-
-    if (noise):
-        y = y_true + random.normal(0, 1, y_true.shape)
-        #TODO: FIX THIS LOL 
-        # y = gen.add_awgn_noise(y_true, -20)
-    else:
-        y = y_true
+    # initializes the Ax = y problem 
+    problem = init.init_l1(m, n, num_samp, max_iter, sparse, noise)
+    A = problem[0]
+    x_true = problem[1]
+    y = problem[2]
 
     # current values of x and z
-    # column 0: classic, column 1: modified, column 2: modified + no threshold
     x_lb = np.zeros((n, 3), dtype=float)
+    # x_lb = np.repeat(gen.rand_exp_decay(n, 0.0001, np.sqrt(5)), 3)
+    # x_lb = np.reshape(x_lb, (n, 3))
     z_lb = np.zeros((n, 3), dtype=float)
 
     t_k_old = np.zeros((max_iter,3), dtype=float)
@@ -60,7 +56,7 @@ def lb_compare(m, n, num_samp, max_iter, sparse=True, noise=False):
     t_k_new2 = np.zeros((n, 1), dtype=float)
 
     # threshold parameter
-    lambda_lb = 4.0;
+    lambda_lb = 3.0
     m_flag = np.zeros((1, n), dtype=int)
     
     # thresholding function 
@@ -112,11 +108,13 @@ def lb_compare(m, n, num_samp, max_iter, sparse=True, noise=False):
         t_k_new2 = t_k_new2 + np.sign(-g_lb[:,2].reshape(n, 1))
 
         # ------ THRESHOLDING ------
+        # threshold detection -- using the timestep from MLB only after
+        # the entry crosses the threshold 
         # finding the indices in m_flag that are zero
         ind_flag = np.argwhere(m_flag == 0)[:, 1]
         # finding the indices in the second column (modified) of z_lb 
         # that are greater than the threshold
-        ind_c = np.argwhere(np.absolute(z_lb[ind_flag, 2]) > lambda_lb)
+        ind_c = np.argwhere(np.absolute(z_lb[ind_flag, 1]) > lambda_lb)
         # flagging indices that are above the threshold
         # m_flag[ind_flag[ind_c]] = 1
         m_flag[0, ind_c] = 1
@@ -127,18 +125,19 @@ def lb_compare(m, n, num_samp, max_iter, sparse=True, noise=False):
         
         # ------ CALCULATING X AND Z  ------
         # classic 
-        z_lb[:, 0] = z_lb[:, 0] - t_lb[0]*g_lb[:, 0]
+        z_lb[:, 0] = x_lb[:, 0] - t_lb[0]*g_lb[:, 0]
         
         # modified 
         step_size_elim = (t_lb[1]*np.absolute(t_k_new[ind_elim])/i).T
-        z_lb[ind_elim, 1] = z_lb[ind_elim, 1] - np.multiply(step_size_elim, g_lb[ind_elim, 1]) 
-        z_lb[ind_nelim, 1] = z_lb[ind_nelim, 1] - t_lb[1]*g_lb[ind_nelim, 1]
-            
+        z_lb[ind_elim, 1] = x_lb[ind_elim, 1] - np.multiply(step_size_elim, g_lb[ind_elim, 1]) 
+        z_lb[ind_nelim, 1] = x_lb[ind_nelim, 1] - t_lb[1]*g_lb[ind_nelim, 1]
+        
         # modified + no threshold detection
         step_size = (t_lb[2]*np.absolute(t_k_new2)/i).T
-        z_lb[:, 2] = z_lb[:, 2] - np.multiply(step_size, g_lb[:, 2])
+        z_lb[:, 2] = x_lb[:, 2] - np.multiply(step_size, g_lb[:, 2])
         
-        x_lb[:, :] = S(z_lb[:, :], lambda_lb)
+        # calculating x_(k+1)
+        x_lb[:, :] = S(z_lb[:, :], lambda_lb*t_lb[0])
         
         # ------ RESULTS ------
         residual[i-1, 0] = la.norm(get_residual(A_sub, x_lb[:, 0], y_sub), 2) / la.norm(y_sub, 2)
@@ -154,32 +153,33 @@ def lb_compare(m, n, num_samp, max_iter, sparse=True, noise=False):
         moder[i-1, 2] = la.norm(x_true - x_lb[:, 2], 2) / la.norm(x_true, 2)
         
     return residual, onenorm, moder
+    
 
 def main():
     # ------ CONFIGURE PARAMETERS ------
     m = 20000         # rows of A 
     n = 1000          # columns of A (rows of x_true and y_true)
     num_samp = 200    # rows of A and y to sample, num_samp < n
-    max_iter = 250
-    sparse = True 
+    max_iter = 1000
+    sparse = True
     noise = False
     
     plot_residual = True
     plot_onenorm = True
     plot_moder = True 
     # ------ EXECUTE ------
-    results = lb_compare(m, n, num_samp, max_iter, sparse, noise)
+    results = ista(m, n, num_samp, max_iter, sparse, noise)
     
-    # print(results[0])
+    # print(results[0][:,0])
     # print(results[1])
     # print(results[2])
     
     if (plot_residual):
-        plot.plot_lb(max_iter, results[0], sparse, noise, "residual")
+        plot.plot_ista(max_iter, results[0][:,0], sparse, noise, "residual")
     if (plot_onenorm):
-        plot.plot_lb(max_iter, results[1], sparse, noise, "1-norm")
+        plot.plot_ista(max_iter, results[1][:,0], sparse, noise, "1-norm")
     if (plot_moder):
-        plot.plot_lb(max_iter, results[2], sparse, noise, "model")
+        plot.plot_ista(max_iter, results[2][:,0], sparse, noise, "model-error")
         
 if __name__ == "__main__":
     main()    
