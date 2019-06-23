@@ -3,7 +3,6 @@ Initializes the Ax = b minimization problem
 @authors: Jimmy Singh and Janice Lee
 @date: June 21st, 2019 
 """
-
 import numpy as np
 import generate_vectors as gen
 

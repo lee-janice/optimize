@@ -5,7 +5,6 @@ Generates vectors/arrays to use in optimization algorithms
 """
 import numpy as np
 import numpy.random as random
-import numpy.linalg as la
 np.random.seed(0)
 
 def rand_exp_decay(n, a, b):
@@ -36,8 +35,8 @@ def rand_sparse(n, frac):
     returns:
         R (numpy array): sparse array
     """
-    # R = np.zeros((n,1), dtype=float)
-    R = np.zeros(n, dtype=float)
+    R = np.zeros((n,1), dtype=float)
+    # R = np.zeros(n, dtype=float)
     idx = random.permutation(n)
     for i in idx[0:(n/frac)]:
         R[i] = random.rand(1)

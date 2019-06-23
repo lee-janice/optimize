@@ -17,7 +17,7 @@ def get_title(sparse, noise, type, algorithm):
     returns:
         the generated figure/plot title 
     """
-    title = algorithm + " ("
+    title = algorithm.upper() + " ("
     # get sparse title 
     if (sparse): 
         title += "sparse soln, "
