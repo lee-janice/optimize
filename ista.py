@@ -6,66 +6,51 @@ Executes ISTA (Iterative Shrinkage Thresholding Algorithm)
 import numpy as np
 import numpy.random as random
 import numpy.linalg as la
-import string
 np.random.seed(0)
 
 import init_problem as init
 import plot
+    
+def threshold(x, lmbda): 
+    """
+    Replaces values in x that are less than lambda with 0
+    params: 
+        x (array-like): the array to threshold
+        lmbda (float): the value to threshold by 
+    returns: 
+        a thresholded array 
+    """
+    return np.multiply(np.maximum(np.absolute(x) - lmbda, 0), np.sign(x))
 
-def get_residual(A, x, y):
-    """
-    Calculates the residual (Ax-y)
-    """
-    Ax = np.dot(A, x) 
-    residual = Ax - y.reshape(Ax.shape)
-    return residual
-
-def get_gradient(A, residual):
-    """
-    Calculates the gradient (A.T * (Ax-y))
-    """
-    gradient = np.dot(A.T, residual)
-    return gradient
-
-def ista(m, n, num_samp, max_iter, sparse=True, noise=False):
+def ista(m, n, num_samp, max_iter, lmbda, sparse=True, noise=False):
     """
     Executes ISTA 
     params:
-        m (int):
-        n (int):
-        num_samp (int):
-        max_iter (int):
+        m (int): rows of A 
+        n (int): columns of A / rows of x and b
+        num_samp (int): rows of A and b to sample, num_samp < n 
+        max_iter (int): number of iterations to run 
+        lmbda (float): the thresholding parameter 
+        sparse (bool): true if the soln is sparse 
+        noise (bool): true if the data contains noise 
     returns:
-        results (array-like): an array containing 
+        results (array-like): an array containing the results of the optimization
     """
     # ------ SETTING PARAMETERS ------
     # initializes the Ax = y problem 
     problem = init.init_l1(m, n, num_samp, max_iter, sparse, noise)
     A = problem[0]
     x_true = problem[1]
-    y = problem[2]
+    b = problem[2]
 
     # current values of x and z
-    x_lb = np.zeros((n, 3), dtype=float)
-    # x_lb = np.repeat(gen.rand_exp_decay(n, 0.0001, np.sqrt(5)), 3)
-    # x_lb = np.reshape(x_lb, (n, 3))
-    z_lb = np.zeros((n, 3), dtype=float)
+    x_k = np.zeros((n, 1))
+    z_k = np.zeros((n, 1))
 
-    t_k_old = np.zeros((max_iter,3), dtype=float)
-    t_k_new = np.zeros((n, 1), dtype=float)
-    t_k_new2 = np.zeros((n, 1), dtype=float)
-
-    # threshold parameter
-    lambda_lb = 3.0
-    m_flag = np.zeros((1, n), dtype=int)
-    
-    # thresholding function 
-    S = lambda x, lmda: np.multiply(np.maximum(np.absolute(x) - lmda, 0), np.sign(x))
-    
     # arrays to hold results 
-    residual = np.zeros((max_iter, 3), dtype=float)
-    onenorm = np.zeros((max_iter, 3), dtype=float)
-    moder = np.zeros((max_iter, 3), dtype=float)    # model error 
+    residuals = np.zeros((max_iter))
+    onenorm = np.zeros((max_iter))
+    moder = np.zeros((max_iter)) 
 
     # ------ MAIN LOOP ------
     for i in range(1, max_iter+1):
@@ -77,82 +62,30 @@ def ista(m, n, num_samp, max_iter, sparse=True, noise=False):
 
         # getting the corresponding rows of A and y
         A_sub = A[idx[:num_samp], :]
-        y_sub = y[idx[:num_samp]]
+        b_sub = b[idx[:num_samp]]
         # TODO: FIX THIS LOL 
         # y_sub = y[0, idx[:num_samp]]
 
-        # why is this here?
-        t_lb = np.repeat(1/la.norm(A_sub, 2), 3)
-
         # ------ RESIDUAL AND GRADIENT ------
-        # get residual
-        r_lb = np.zeros((num_samp, 3))
-        r_lb[:, 0] = get_residual(A_sub, x_lb[:, 0], y_sub)
-        r_lb[:, 1] = get_residual(A_sub, x_lb[:, 1], y_sub)
-        r_lb[:, 2] = get_residual(A_sub, x_lb[:, 2], y_sub)
-
-        # getting gradient
-        g_lb = np.zeros((n, 3))
-        g_lb[:, 0] = get_gradient(A_sub, r_lb[:, 0])
-        g_lb[:, 1] = get_gradient(A_sub, r_lb[:, 1])
-        g_lb[:, 2] = get_gradient(A_sub, r_lb[:, 2])
+        # gets the residual ( Ax - b )
+        residual = np.dot(A_sub, x_k) - b_sub
+        # gets the gradient ( A.T * residual )
+        gradient = np.dot(A_sub.T, residual)
 
         # ------ STEP SIZE ------
         # getting the step size
-        t_lb[0] = la.norm(r_lb[:, 0], 2)**2/la.norm(g_lb[:, 0], 2)**2
-        t_lb[1] = la.norm(r_lb[:, 1], 2)**2/la.norm(g_lb[:, 1], 2)**2
-        t_lb[2] = la.norm(r_lb[:, 2], 2)**2/la.norm(g_lb[:, 2], 2)**2
-
-        t_k_old[i-1, :] = t_lb
-        t_k_new = t_k_new + np.sign(-g_lb[:,1]).reshape(n, 1)
-        t_k_new2 = t_k_new2 + np.sign(-g_lb[:,2].reshape(n, 1))
-
-        # ------ THRESHOLDING ------
-        # threshold detection -- using the timestep from MLB only after
-        # the entry crosses the threshold 
-        # finding the indices in m_flag that are zero
-        ind_flag = np.argwhere(m_flag == 0)[:, 1]
-        # finding the indices in the second column (modified) of z_lb 
-        # that are greater than the threshold
-        ind_c = np.argwhere(np.absolute(z_lb[ind_flag, 1]) > lambda_lb)
-        # flagging indices that are above the threshold
-        # m_flag[ind_flag[ind_c]] = 1
-        m_flag[0, ind_c] = 1
+        t_k = la.norm(residual, 2)**2/la.norm(gradient, 2)**2
         
-        # eliminate flipping depending on flag 
-        ind_elim = np.argwhere(m_flag == 1)[:, 1]
-        ind_nelim = np.argwhere(m_flag == 0)[:, 1]
-        
-        # ------ CALCULATING X AND Z  ------
-        # classic 
-        z_lb[:, 0] = x_lb[:, 0] - t_lb[0]*g_lb[:, 0]
-        
-        # modified 
-        step_size_elim = (t_lb[1]*np.absolute(t_k_new[ind_elim])/i).T
-        z_lb[ind_elim, 1] = x_lb[ind_elim, 1] - np.multiply(step_size_elim, g_lb[ind_elim, 1]) 
-        z_lb[ind_nelim, 1] = x_lb[ind_nelim, 1] - t_lb[1]*g_lb[ind_nelim, 1]
-        
-        # modified + no threshold detection
-        step_size = (t_lb[2]*np.absolute(t_k_new2)/i).T
-        z_lb[:, 2] = x_lb[:, 2] - np.multiply(step_size, g_lb[:, 2])
-        
-        # calculating x_(k+1)
-        x_lb[:, :] = S(z_lb[:, :], lambda_lb*t_lb[0])
+        # ------ UPDATING X AND Z  ------
+        z_k = x_k - t_k * gradient
+        x_k = threshold(z_k, lmbda)
         
         # ------ RESULTS ------
-        residual[i-1, 0] = la.norm(get_residual(A_sub, x_lb[:, 0], y_sub), 2) / la.norm(y_sub, 2)
-        residual[i-1, 1] = la.norm(get_residual(A_sub, x_lb[:, 1], y_sub), 2) / la.norm(y_sub, 2)
-        residual[i-1, 2] = la.norm(get_residual(A_sub, x_lb[:, 2], y_sub), 2) / la.norm(y_sub, 2)
+        residuals[i-1] = la.norm(residual, 2) / la.norm(b_sub, 2)
+        onenorm[i-1] = la.norm(x_k, 1)
+        moder[i-1] = la.norm(x_true - x_k, 2) / la.norm(x_true, 2)
         
-        onenorm[i-1, 0] = la.norm(x_lb[:, 0], 1)
-        onenorm[i-1, 1] = la.norm(x_lb[:, 1], 1)
-        onenorm[i-1, 2] = la.norm(x_lb[:, 2], 1)
-        
-        moder[i-1, 0] = la.norm(x_true - x_lb[:, 0], 2) / la.norm(x_true, 2)
-        moder[i-1, 1] = la.norm(x_true - x_lb[:, 1], 2) / la.norm(x_true, 2)
-        moder[i-1, 2] = la.norm(x_true - x_lb[:, 2], 2) / la.norm(x_true, 2)
-        
-    return residual, onenorm, moder
+    return residuals, onenorm, moder
     
 
 def main():
@@ -161,6 +94,7 @@ def main():
     n = 1000          # columns of A (rows of x_true and y_true)
     num_samp = 200    # rows of A and y to sample, num_samp < n
     max_iter = 1000
+    lmbda = 3.0
     sparse = True
     noise = False
     
@@ -168,18 +102,18 @@ def main():
     plot_onenorm = True
     plot_moder = True 
     # ------ EXECUTE ------
-    results = ista(m, n, num_samp, max_iter, sparse, noise)
+    results = ista(m, n, num_samp, max_iter, lmbda, sparse, noise)
     
-    # print(results[0][:,0])
+    # print(results[0])
     # print(results[1])
     # print(results[2])
     
     if (plot_residual):
-        plot.plot_ista(max_iter, results[0][:,0], sparse, noise, "residual")
+        plot.plot_residual(max_iter, results[0], sparse, noise, "ISTA")
     if (plot_onenorm):
-        plot.plot_ista(max_iter, results[1][:,0], sparse, noise, "1-norm")
+        plot.plot_onenorm(max_iter, results[1], sparse, noise, "ISTA")
     if (plot_moder):
-        plot.plot_ista(max_iter, results[2][:,0], sparse, noise, "model-error")
+        plot.plot_moder(max_iter, results[2], sparse, noise, "ISTA")
         
 if __name__ == "__main__":
     main()    
