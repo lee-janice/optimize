@@ -8,7 +8,9 @@ import numpy.random as random
 import numpy.linalg as la
 np.random.seed(0)
 
+import set_params
 import init_problem as init
+import get_results 
 import plot
 
 def threshold(x, lmbda): 
@@ -48,10 +50,8 @@ def lb_classic(m, n, num_samp, max_iter, lmbda, sparse=True, noise=False):
     x_k = np.zeros((n, 1))
     z_k = np.zeros((n, 1))
 
-    # arrays to hold results 
-    residuals = np.zeros((max_iter))
-    onenorm = np.zeros((max_iter))
-    moder = np.zeros((max_iter))
+    # creates a Results object to hold and update results 
+    results = get_results.Results(max_iter, n, x_true)
     
     # ------ MAIN LOOP ------
     for i in range(1, max_iter+1):
@@ -82,25 +82,25 @@ def lb_classic(m, n, num_samp, max_iter, lmbda, sparse=True, noise=False):
         x_k = threshold(z_k, lmbda)
         
         # ------ RESULTS ------
-        residuals[i-1] = la.norm(residual, 2) / la.norm(b_sub, 2)
-        onenorm[i-1] = la.norm(x_k, 1)
-        moder[i-1] = la.norm(x_true - x_k, 2) / la.norm(x_true, 2)
+        results.update_iteration()
+        results.update_residuals(residual, b_sub)
+        results.update_onenorm(x_k)
+        results.update_moder(x_true, x_k)
+        results.update_z_history(z_k, n)
         
-    return residuals, onenorm, moder
+    return results
     
 def main():
     # ------ CONFIGURE PARAMETERS ------
-    m = 20000         # rows of A 
-    n = 1000          # columns of A (rows of x_true and y_true)
-    num_samp = 200    # rows of A and y to sample, num_samp < n
-    max_iter = 300
-    lmbda = 3.0
-    sparse = True
-    noise = False
+    params = set_params.Params()
+    m = params.m         
+    n = params.n         
+    num_samp = params.num_samp    
+    max_iter = params.max_iter
+    lmbda = params.lmbda 
     
-    plot_residual = True
-    plot_onenorm = True
-    plot_moder = True 
+    sparse = params.sparse 
+    noise = params.noise
     # ------ EXECUTE ------
     results = lb_classic(m, n, num_samp, max_iter, lmbda, sparse, noise)
     
@@ -110,12 +110,8 @@ def main():
     
     algorithm = "lb-classic"
     
-    if (plot_residual):
-        plot.plot_residual(max_iter, results[0], sparse, noise, algorithm)
-    if (plot_onenorm):
-        plot.plot_onenorm(max_iter, results[1], sparse, noise, algorithm)
-    if (plot_moder):
-        plot.plot_moder(max_iter, results[2], sparse, noise, algorithm)
+    plot.meta_plot(max_iter, results, sparse, noise, algorithm, m, num_samp, lmbda)
+        
         
 if __name__ == "__main__":
     main()    
