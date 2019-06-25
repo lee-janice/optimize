@@ -8,7 +8,9 @@ import numpy.random as random
 import numpy.linalg as la
 np.random.seed(0)
 
+import set_params
 import init_problem as init 
+import get_results
 import plot
 
 def adagrad(m, n, num_samp, max_iter, sparse=True, noise=False, eta=2, epsilon=1e-6):
@@ -40,10 +42,8 @@ def adagrad(m, n, num_samp, max_iter, sparse=True, noise=False, eta=2, epsilon=1
     # the estimation of x_true 
     x_k = np.zeros((n, 1))
     
-    # stores the results for each iteration 
-    residuals = np.zeros((max_iter))
-    onenorm = np.zeros((max_iter))
-    moder = np.zeros((max_iter))
+    # creates a Results object to hold and update results 
+    results = get_results.Results(max_iter, n, x_true)
     
     for i in range(1, max_iter+1):
         print("iteration: " + str(i))
@@ -69,41 +69,38 @@ def adagrad(m, n, num_samp, max_iter, sparse=True, noise=False, eta=2, epsilon=1
         x_k = x_k - np.multiply(t_k, gradient)
         
         # ------ RESULTS ------
-        residuals[i-1] = la.norm(residual, 2) / la.norm(b_sub, 2)
-        onenorm[i-1] = la.norm(x_k, 1)
-        moder[i-1] = la.norm(x_true - x_k, 2) / la.norm(x_true, 2)
-    
-    return residuals, onenorm, moder 
+        results.update_iteration()
+        results.update_residuals(residual, b_sub)
+        results.update_onenorm(x_k)
+        results.update_moder(x_true, x_k)
+        results.update_x_history(x_k, n)
+        
+    return results
     
 def main(): 
     # ------ CONFIGURE PARAMETERS ------
-    m = 20000         # rows of A 
-    n = 1000          # columns of A (rows of x_true and y_true)
-    num_samp = 200    # rows of A and y to sample, num_samp < n
-    max_iter = 250
-    sparse = True
-    noise = False
-    eta = 1
-    epsilon = 1e-6
+    params = set_params.Params()
+    m = params.m         
+    n = params.n         
+    num_samp = params.num_samp    
+    max_iter = params.max_iter
     
-    plot_residual = True
-    plot_onenorm = True
-    plot_moder = True 
+    lmbda = params.lmbda 
+    eta = params.eta
+    epsilon = params.epsilon
+    
+    sparse = params.sparse 
+    noise = params.noise
     # ------ EXECUTE ------
     results = adagrad(m, n, num_samp, max_iter, sparse, noise, eta, epsilon)
     
-    print(results[0][249])
+    # print(results[0][249])
     # print(results[1])
     # print(results[2])
     
     algorithm = "adagrad"
     
-    if (plot_residual):
-        plot.plot_residual(max_iter, results[0], sparse, noise, algorithm)
-    if (plot_onenorm):
-        plot.plot_onenorm(max_iter, results[1], sparse, noise, algorithm)
-    if (plot_moder):
-        plot.plot_moder(max_iter, results[2], sparse, noise, algorithm)
+    plot.meta_plot(max_iter, results, sparse, noise, algorithm, m, num_samp)
     
 if __name__ == "__main__":
     main()
