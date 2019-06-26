@@ -13,22 +13,27 @@ import init_problem as init
 import get_results
 import plot
 
-def adagrad(m, n, num_samp, max_iter, sparse=True, noise=False, eta=2, epsilon=1e-6):
+def adagrad(params):
     """
     Executes ADAGRAD  
     params:
-        m (int): rows of A 
-        n (int): columns of A / rows of x and b
-        num_samp (int): rows of A and b to sample, num_samp < n 
-        max_iter (int): number of iterations to run 
-        sparse (bool): true if the soln is sparse 
-        noise (bool): true if the data contains noise 
-        eta (float): the desired learning rate 
-        epsilon (float): a small constant to avoid division by zero in calculation of step size 
+        params (Params object): contains parameters for optimization 
     returns:
         results (array-like): a tuple containing the arrays 
                 with the results of the optimization
     """
+    # ------ PARAMETERS ------
+    m = params.m         
+    n = params.n         
+    num_samp = params.num_samp    
+    max_iter = params.max_iter
+    
+    eta = params.eta
+    epsilon = params.epsilon
+    
+    sparse = params.sparse 
+    noise = params.noise
+    # ------------------------
     # initializes the Ax = b problem 
     problem = init.init_l1(m, n, num_samp, max_iter, sparse, noise)
     A = problem[0]
@@ -80,27 +85,13 @@ def adagrad(m, n, num_samp, max_iter, sparse=True, noise=False, eta=2, epsilon=1
 def main(): 
     # ------ CONFIGURE PARAMETERS ------
     params = set_params.Params()
-    m = params.m         
-    n = params.n         
-    num_samp = params.num_samp    
-    max_iter = params.max_iter
-    
-    lmbda = params.lmbda 
-    eta = params.eta
-    epsilon = params.epsilon
-    
-    sparse = params.sparse 
-    noise = params.noise
     # ------ EXECUTE ------
-    results = adagrad(m, n, num_samp, max_iter, sparse, noise, eta, epsilon)
-    
-    # print(results[0][249])
-    # print(results[1])
-    # print(results[2])
-    
+    results = adagrad(params)
+    # ------ PLOT ------
     algorithm = "adagrad"
-    
-    plot.meta_plot(max_iter, results, sparse, noise, algorithm, m, num_samp)
+    plt = plot.Plot(params)
+    plt.update_algorithm(algorithm, results, thresholding=True)
+    plt.plot_all()
     
 if __name__ == "__main__":
     main()

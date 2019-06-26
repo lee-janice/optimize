@@ -24,24 +24,29 @@ def threshold(x, lmbda):
     """
     return np.multiply(np.maximum(np.absolute(x) - lmbda, 0), np.sign(x))
 
-def adagrad_lb_modified(m, n, num_samp, max_iter, lmbda, sparse=True, noise=False, eta=.5, epsilon=1e-6, flipping=False):
+def adagrad_lb_modified(params):
     """
     Executes ADAGRAD  
     params:
-        m (int): rows of A 
-        n (int): columns of A / rows of x and b
-        num_samp (int): rows of A and b to sample, num_samp < n 
-        max_iter (int): number of iterations to run 
-        lmbda (float): the thresholding parameter 
-        sparse (bool): true if the soln is sparse 
-        noise (bool): true if the data contains noise 
-        flipping (bool): true if step sizes should only be updated when values cross threshold
-        eta (float): the desired learning rate 
-        epsilon (float): a small constant to avoid division by zero in calculation of step size 
+        params (Params object): contains parameters for optimization 
     returns:
         results (array-like): a tuple containing the arrays 
                 with the results of the optimization
     """
+    # ------ PARAMETERS ------
+    m = params.m         
+    n = params.n         
+    num_samp = params.num_samp    
+    max_iter = params.max_iter
+    
+    lmbda = params.lmbda 
+    eta = params.eta
+    epsilon = params.epsilon
+    
+    sparse = params.sparse 
+    noise = params.noise
+    flipping = params.flipping
+    # ------------------------
     # initializes the Ax = b problem 
     problem = init.init_l1(m, n, num_samp, max_iter, sparse, noise)
     A = problem[0]
@@ -80,7 +85,7 @@ def adagrad_lb_modified(m, n, num_samp, max_iter, lmbda, sparse=True, noise=Fals
         # gets the gradient ( A.T * residual )
         gradient = np.dot(A_sub.T, residual)
         
-        # ------ THRESHOLDING ------
+        # ------ FLIPPING ------
         if (flipping):
             # finding the indices in m_flag that are zero
             ind_flag = np.argwhere(m_flag == 0)[:, 1]
@@ -125,30 +130,16 @@ def adagrad_lb_modified(m, n, num_samp, max_iter, lmbda, sparse=True, noise=Fals
 def main(): 
     # ------ CONFIGURE PARAMETERS ------
     params = set_params.Params()
-    m = params.m         
-    n = params.n         
-    num_samp = params.num_samp    
-    max_iter = params.max_iter
-    lmbda = params.lmbda 
-    eta = params.eta
-    epsilon = params.epsilon
-    
-    sparse = params.sparse 
-    noise = params.noise
-    flipping = params.flipping
     # ------ EXECUTE ------
-    results = adagrad_lb_modified(m, n, num_samp, max_iter, lmbda, sparse, noise, eta, epsilon, flipping)
-    
-    # print(results[0][299])
-    # print(results[1])
-    # print(results[2])
-    
-    if (flipping):
+    results = adagrad_lb_modified(params)
+    # ------ PLOT ------
+    if (params.flipping):
         algorithm = "adagrad-lb-modified-w-flipping"
     else: 
         algorithm = "adagrad-lb-modified"
-    
-    plot.meta_plot(max_iter, results, sparse, noise, algorithm, m, num_samp, lmbda)
+    plt = plot.Plot(params)
+    plt.update_algorithm(algorithm, results, thresholding=True)
+    plt.plot_all()
     
 if __name__ == "__main__":
     main()

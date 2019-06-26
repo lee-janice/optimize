@@ -24,23 +24,28 @@ def threshold(x, lmbda):
     """
     return np.multiply(np.maximum(np.absolute(x) - lmbda, 0), np.sign(x))
 
-def adagrad_lb_classic(m, n, num_samp, max_iter, lmbda, sparse=True, noise=False, eta=.5, epsilon=1e-6):
+def adagrad_lb_classic(params):
     """
     Executes ADAGRAD  
     params:
-        m (int): rows of A 
-        n (int): columns of A / rows of x and b
-        num_samp (int): rows of A and b to sample, num_samp < n 
-        max_iter (int): number of iterations to run 
-        lmbda (float): the thresholding parameter 
-        sparse (bool): true if the soln is sparse 
-        noise (bool): true if the data contains noise 
-        eta (float): the desired learning rate 
-        epsilon (float): a small constant to avoid division by zero in calculation of step size 
+        params (Params object): contains parameters for optimization 
     returns:
         results (array-like): a tuple containing the arrays 
                 with the results of the optimization
     """
+    # ------ PARAMETERS ------
+    m = params.m         
+    n = params.n         
+    num_samp = params.num_samp    
+    max_iter = params.max_iter
+    
+    lmbda = params.lmbda 
+    eta = params.eta
+    epsilon = params.epsilon
+    
+    sparse = params.sparse 
+    noise = params.noise
+    # -----------------------
     # initializes the Ax = b problem 
     problem = init.init_l1(m, n, num_samp, max_iter, sparse, noise)
     A = problem[0]
@@ -95,26 +100,13 @@ def adagrad_lb_classic(m, n, num_samp, max_iter, lmbda, sparse=True, noise=False
 def main(): 
     # ------ CONFIGURE PARAMETERS ------
     params = set_params.Params()
-    m = params.m         
-    n = params.n         
-    num_samp = params.num_samp    
-    max_iter = params.max_iter
-    lmbda = params.lmbda 
-    eta = params.eta
-    epsilon = params.epsilon
-    
-    sparse = params.sparse 
-    noise = params.noise
     # ------ EXECUTE ------
-    results = adagrad_lb_classic(m, n, num_samp, max_iter, lmbda, sparse, noise, eta, epsilon)
-    
-    # print(results[0][299])
-    # print(results[1])
-    # print(results[2])
-    
+    results = adagrad_lb_classic(params)
+    # ------ PLOT ------
     algorithm = "adagrad-lb-classic"
-    
-    plot.meta_plot(max_iter, results, sparse, noise, algorithm, m, num_samp, lmbda)
+    plt = plot.Plot(params)
+    plt.update_algorithm(algorithm, results, thresholding=True)
+    plt.plot_all()
     
 if __name__ == "__main__":
     main()
