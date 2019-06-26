@@ -6,7 +6,6 @@ Executes ADAGRAD (Adaptive Gradient Descent) with (modified) Linearized Bregman-
 import numpy as np
 import numpy.random as random
 import numpy.linalg as la
-np.random.seed(0)
 
 import set_params
 import init_problem as init 
@@ -123,6 +122,7 @@ def adagrad_lb_modified(params):
         results.update_residuals(residual, b_sub)
         results.update_onenorm(x_k)
         results.update_moder(x_true, x_k)
+        results.update_x_history(x_k, n)
         results.update_z_history(z_k, n)
         
     return results
