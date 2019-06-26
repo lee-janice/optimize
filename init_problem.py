@@ -28,5 +28,5 @@ def init_l1(m, n, num_samp, max_iter, sparse=True, noise=False):
         # y = gen.add_awgn_noise(y_true, -20)
     else:
         b = b_true
-        
-    return (A, x_true, b)
+    
+    return A, x_true, b

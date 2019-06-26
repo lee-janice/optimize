@@ -8,6 +8,8 @@ import lb_modified
 import adagrad 
 import adagrad_lb_classic 
 import adagrad_lb_modified 
+import adam 
+import adam_lb_classic
 
 def main():
     lb_classic.main() 
@@ -15,6 +17,8 @@ def main():
     adagrad.main() 
     adagrad_lb_classic.main() 
     adagrad_lb_modified.main() 
+    adam.main()
+    adam_lb_classic.main()
 
 if __name__ == '__main__':
     main()
