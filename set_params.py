@@ -22,12 +22,12 @@ class Params:
         self.num_samp = 200 
         self.max_iter = 300 
         
-        self.lmbda = 3.0
-        self.eta = 0.5
+        self.lmbda = 2.0
+        self.eta = 1
         self.epsilon = 1e-6
         self.beta_1 = .9
         self.beta_2 = .999
 
-        self.sparse = True   
-        self.noise = False
-        self.flipping = True
+        self.sparse = False   
+        self.noise = True
+        self.flipping = False

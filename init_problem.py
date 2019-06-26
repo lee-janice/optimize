@@ -4,6 +4,7 @@ Initializes the Ax = b minimization problem
 @date: June 21st, 2019 
 """
 import numpy as np
+np.random.seed(0)
 import generate_vectors as gen
 
 def init_l1(m, n, num_samp, max_iter, sparse=True, noise=False):
@@ -12,7 +13,7 @@ def init_l1(m, n, num_samp, max_iter, sparse=True, noise=False):
     """
     # initializes the true value of x (x*)
     if (sparse):
-        x_true = gen.rand_sparse(n, 50)
+        x_true = gen.rand_sparse(n, 400)
     else:
         x_true = gen.rand_exp_decay(n, 0.0001, np.sqrt(5))
         

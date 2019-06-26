@@ -26,19 +26,19 @@ def rand_exp_decay(n, a, b):
         R[i] = -R[i]
     return R.reshape(n, 1)
     
-def rand_sparse(n, frac):
+def rand_sparse(n, num_sparse):
     """
     Creates a random sparse array
     params:
         n (int): desired number of elements in the array
-        frac (int): 1/frac gives the fraction of non-zero elements in the array
+        num_sparse (int): desired number of non-zero elements in the array
     returns:
         R (numpy array): sparse array
     """
     R = np.zeros((n,1), dtype=float)
     # R = np.zeros(n, dtype=float)
     idx = random.permutation(n)
-    for i in idx[0:(n/frac)]:
+    for i in idx[0:num_sparse]:
         R[i] = random.rand(1)
     return R
     

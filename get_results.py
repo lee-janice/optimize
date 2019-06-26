@@ -13,7 +13,8 @@ class Results:
         self.moder = np.zeros((max_iter))
         self.x_history = np.zeros((max_iter, n))
         self.z_history = np.zeros((max_iter, n))
-        self.nonzeros = np.argwhere(x_true!=0)[:, 0]
+        self.x_true = x_true
+        self.idx_nonzeros = np.argwhere(x_true!=0)[:, 0]
         self.i = 0
         
     def update_iteration(self):
@@ -50,7 +51,10 @@ class Results:
         return self.z_history
     
     def get_x_history_nonzeros(self):
-        return self.x_history[:, self.nonzeros[:25]]
+        return self.x_history[:, self.idx_nonzeros[:35]]
         
     def get_z_history_nonzeros(self):
-        return self.z_history[:, self.nonzeros[:25]]
+        return self.z_history[:, self.idx_nonzeros[:35]]
+        
+    def get_percent_nonzeros_recovered(self):
+        return float(len(np.argwhere(self.x_history[-1, self.idx_nonzeros]!=0)[:,0])) / len(self.idx_nonzeros)
