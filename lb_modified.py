@@ -105,13 +105,13 @@ def lb_modified(params):
         tau = tau + np.sign(-gradient)
         # getting the step size 
         if (flipping):
-            step_size_elim = (t_k * np.absolute(tau[ind_elim])/i)
+            step_size = (t_k * np.absolute(tau[ind_elim])/i)
         else: 
             step_size = (t_k * np.absolute(tau)/i)
         
         # ------ UPDATING X AND Z ------
         if (flipping):
-            z_k[ind_elim] = z_k[ind_elim] - np.multiply(step_size_elim, gradient[ind_elim])
+            z_k[ind_elim] = z_k[ind_elim] - np.multiply(step_size, gradient[ind_elim])
             z_k[ind_nelim] = z_k[ind_nelim] - t_k * gradient[ind_nelim]
             x_k = threshold(z_k, lmbda)
         else: 
@@ -119,12 +119,7 @@ def lb_modified(params):
             x_k = threshold(z_k, lmbda)
         
         # ------ RESULTS ------
-        results.update_iteration()
-        results.update_residuals(residual, b_sub)
-        results.update_onenorm(x_k)
-        results.update_moder(x_true, x_k)
-        results.update_x_history(x_k, n)
-        results.update_z_history(z_k, n)
+        results.update(residual, b_sub, n, x_k, z_k, t_k, adaptive=False)
         
     return results
 

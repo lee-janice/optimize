@@ -172,9 +172,21 @@ class Plot:
         
         self.add_datapass_indicator()
         self.save_plot("z-nonzeros")
+        
+    def plot_t_nonzeros(self):
+        plt.clf()
+        plt.plot(range(1, self.max_iter+1), self.t_small, linestyle=":", label="Small value")
+        plt.plot(range(1, self.max_iter+1), self.t_large, linestyle=":", label="Large value")
+        
+        plt.legend()
+        plt.xlabel("Number of iterations")
+        plt.ylabel(r"$t_k$")
+        
+        self.add_datapass_indicator()
+        self.save_plot("t-nonzeros")
 
     def add_datapass_indicator(self):
-        for i in range(1, (self.num_samp*self.max_iter)/self.m+1):
+        for i in range(1, (int((self.num_samp*self.max_iter)/self.m+1))):
             plt.axvline(i * (self.m/self.num_samp), linestyle="-.", color="0.75")
         
     def save_plot(self, type):
@@ -188,6 +200,7 @@ class Plot:
         self.plot_onenorm()
         self.plot_moder()
         self.plot_residual_vs_sparsity()
+        self.plot_t_nonzeros()
         
         if (self.thresholding):
             self.plot_z_nonzeros()
@@ -200,6 +213,8 @@ class Plot:
         self.moder = results.get_moder()
         self.x_k = results.get_x_history_nonzeros()
         self.z_k = results.get_z_history_nonzeros()
+        self.t_small = results.get_t_history_small()
+        self.t_large = results.get_t_history_large()
         
     def update_algorithm(self, algorithm, results, thresholding, legend=None):
         self.residual = results.get_residuals()
@@ -207,6 +222,10 @@ class Plot:
         self.moder = results.get_moder()
         self.x_k = results.get_x_history_nonzeros()
         self.z_k = results.get_z_history_nonzeros()
+        self.t_k = results.get_t_history()
+        
+        self.t_small = results.get_t_history_small()
+        self.t_large = results.get_t_history_large()
         
         self.algorithm = algorithm 
         self.thresholding = thresholding 

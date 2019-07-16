@@ -79,6 +79,7 @@ def adagrad(params):
         results.update_onenorm(x_k)
         results.update_moder(x_true, x_k)
         results.update_x_history(x_k, n)
+        results.update(residual, b_sub, n, x_k, np.zeros((n, 1)), t_k, adaptive=True)
         
     return results
     

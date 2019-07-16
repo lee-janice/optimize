@@ -97,16 +97,8 @@ def adam_lb_classic(params):
         x_k = threshold(z_k, lmbda)
         
         # ------ RESULTS ------
-        results.update_iteration()
-        results.update_residuals(residual, b_sub)
-        results.update_onenorm(x_k)
-        results.update_moder(x_true, x_k)
-        results.update_x_history(x_k, n)
-        results.update_z_history(z_k, n)
-        
-        # print(x_k[:100])
-        # print(x_true[:100])
-        
+        results.update(residual, b_sub, n, x_k, z_k, t_k, adaptive=True)
+            
     return results
     
 def main(): 

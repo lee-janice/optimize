@@ -86,11 +86,7 @@ def adam(params):
         x_k = x_k - np.multiply(t_k, m_hat)
         
         # ------ RESULTS ------
-        results.update_iteration()
-        results.update_residuals(residual, b_sub)
-        results.update_onenorm(x_k)
-        results.update_moder(x_true, x_k)
-        results.update_x_history(x_k, n)
+        results.update(residual, b_sub, n, x_k, np.zeros((n, 1)), t_k, adaptive=True)
         
         # print(t_k)
         # print(x_k[:20])
